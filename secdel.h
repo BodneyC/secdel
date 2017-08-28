@@ -20,6 +20,7 @@ class inputFile {
 		DWORD resetFilePointer();
 		__int64 getInputInfo();
 		bool writeToFile(BYTE*, __int64);
+		bool renameFile(LPCTSTR, LPCTSTR);
 		bool deleteFile();
 };
 

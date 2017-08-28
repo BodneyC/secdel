@@ -36,6 +36,12 @@ bool inputFile::writeToFile (BYTE *byteArr, __int64 bytecount) {
 											NULL
 										);
 }
+// Renames the file
+bool inputFile::renameFile (LPCTSTR  currentname, LPCTSTR newname) {
+	return MoveFile	( currentname,
+										newname
+									);
+}
 // Deletes the file
 bool inputFile::deleteFile () {
 	CloseHandle(hInput);
