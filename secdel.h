@@ -4,7 +4,7 @@
 #include <windows.h>
 #include <tchar.h>
 
-#define SECTOR 512
+#define MEGABYTE 1048576
 typedef unsigned char BYTE;
 
 /*----------------------------------------------------
@@ -17,8 +17,9 @@ class inputFile {
 		HANDLE hInput;
 		inputFile(LPCTSTR);
 		void openFile();
+		DWORD resetFilePointer();
 		__int64 getInputInfo();
-		bool writeToFile(BYTE*);
+		bool writeToFile(BYTE*, __int64);
 		bool deleteFile();
 };
 

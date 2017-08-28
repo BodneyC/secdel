@@ -14,16 +14,24 @@ void inputFile::openFile () {
 												NULL
 											);
 }
+// Resets the file pointer to 0
+DWORD inputFile::resetFilePointer () {
+	return SetFilePointer (	hInput,
+													0,
+													NULL,
+													FILE_BEGIN
+								 				);
+}
 // Returns size of input file
 __int64 inputFile::getInputInfo () {
 	LO32 = GetFileSize (hInput, &HI32);
 	return (__int64)HI32 + (__int64)LO32;
 }
 // Writes to the file
-bool inputFile::writeToFile (BYTE *zeroArr) {
+bool inputFile::writeToFile (BYTE *byteArr, __int64 bytecount) {
 	return WriteFile (	hInput,
-											zeroArr,
-											this->getInputInfo(),
+											byteArr,
+											bytecount,
 											&byteswritten,
 											NULL
 										);
