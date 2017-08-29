@@ -37,13 +37,17 @@ bool inputFile::writeToFile (BYTE *byteArr, __int64 bytecount) {
 										);
 }
 // Renames the file
-bool inputFile::renameFile (LPCTSTR  currentname, LPCTSTR newname) {
-	return MoveFile	( currentname,
-										newname
-									);
+bool inputFile::renameFile (LPCTSTR currentname, LPCTSTR newname) {
+	return MoveFileEx	( currentname,
+											newname,
+											MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+										);
+}
+// CLoses the handle to the inputFile
+void inputFile::closeHandle () {
+	CloseHandle(hInput);
 }
 // Deletes the file
-bool inputFile::deleteFile () {
-	CloseHandle(hInput);
-	return DeleteFile(filename);
+bool inputFile::deleteFile (LPCTSTR currentname) {
+	return DeleteFile(currentname);
 }

@@ -21,7 +21,8 @@ class inputFile {
 		__int64 getInputInfo();
 		bool writeToFile(BYTE*, __int64);
 		bool renameFile(LPCTSTR, LPCTSTR);
-		bool deleteFile();
+		void closeHandle();
+		bool deleteFile(LPCTSTR);
 };
 
 #endif

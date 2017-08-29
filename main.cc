@@ -56,31 +56,42 @@ void wipeFunction (inputFile &cFile) {
 			std::cout << "Pass " << std::setw(2) << levCount << ": written value: " << std::hex << std::setfill('0') << std::internal << std::showbase << std::setw(4) << (int)randVal << '\n';
 		}
 	}
+	std::cout.copyfmt(fmtCout);
 	delete[] byteArr;
 }
 /*------------------------------------------------------------
 Renaming function
 ------------------------------------------------------------*/
-
-// TODO: TEST THIS FUNCTION; ADD A COUT FOR IT
-void renameFunction (inputFile &cFile) {
+std::string renameFunction (inputFile &cFile) {
 	CMDArgs.newFilename = CMDArgs.pathOnly;
+	std::string tempFilename = CMDArgs.inputString;
 	char ch = 'A';
-	for (int o = 0; o < CMDArgs.levelVal || o < 25; o++) {
+	bool renameSucc;
+
+	for (int o = 0; o < CMDArgs.levelVal && o < 25; o++) {
 		for (int i = 0; i < 10; i++) {
 			CMDArgs.newFilename.insert(CMDArgs.newFilename.end(), 1, ch);
 		}
-		cFile.renameFile(CMDArgs.inputString.c_str(), CMDArgs.newFilename.c_str());
+		renameSucc = cFile.renameFile(tempFilename.c_str(), CMDArgs.newFilename.c_str());
+		tempFilename = CMDArgs.newFilename;
 		CMDArgs.newFilename.erase(CMDArgs.newFilename.end() - 10, CMDArgs.newFilename.end());
+		if (renameSucc) {
+			std::cout << "Pass " << std::setw(2) << o << ": renamed as: ";
+			for (int i = 0; i < 10; i++) {
+				std::cout << ch;
+			}
+			std::cout << '\n';
+		}
 		ch++;
 	}
+	return tempFilename;
 }
 /*------------------------------------------------------------
 Argument Returning (CMDArgs)
 ------------------------------------------------------------*/
 void returnArgs (int argn, char const *args[]) {
 	try {
-		TCLAP::CmdLine cmd("SECDEL", ' ', "0.01");
+		TCLAP::CmdLine cmd("Secure deletion tool for Windows", ' ', "0.01");
 		TCLAP::UnlabeledValueArg<std::string> inputArg("input", "Input File-path", true, "empty", "String", false);
 		TCLAP::ValueArg<int> levelArg("l", "levels", "Number of times to wipe", false, 1, "Integer");
 		TCLAP::SwitchArg streamSwitch("s", "stream", "Wipe in small chunks", cmd, 0);
@@ -135,6 +146,7 @@ int main(int argc, char const *argv[]) {
 	std::srand(std::time(0));
 	returnArgs(argc, argv);
 	retPathname(); retFilename();
+	std::string finalFilename = CMDArgs.inputString;
 
 	LPCTSTR tempName = CMDArgs.inputString.c_str();
 	inputFile cFile (tempName);
@@ -144,16 +156,19 @@ int main(int argc, char const *argv[]) {
 		std::cout << "Failed to open handle to file. Error code: " << GetLastError() << '\n';
 		return 1;
 	}
-	std::cout << "Filesize: " << '\t' << cFile.getInputInfo() << " bytes\n\n";
+	std::cout << "Filesize: " << '\t' << cFile.getInputInfo() << " bytes\n\nWiping File Contents:\n";
 	wipeFunction(cFile);
-	if (CMDArgs.renameVal) renameFunction(cFile);
-
-	// if (!cFile.deleteFile()) {
-	// 	std::cout << "Could not delete file. Error code: " << GetLastError() << '\n';
-	// 	return 1;
-	// } else {
-	// 	std::cout << "File deleted (securely)" << '\n';
+	cFile.closeHandle();
+	if (CMDArgs.renameVal) {
+		std::cout << "\nWiping Filename:" << '\n';
+		finalFilename = renameFunction(cFile);
+	}
+	if (!cFile.deleteFile(finalFilename.c_str())) {
+		std::cout << "\nCould not delete file. Error code: " << GetLastError() << '\n';
+		return 1;
+	} else {
+		std::cout << "\nFile deleted (securely)" << '\n';
 		std::cout << '\n' << "Program Completed Successfully" << '\n';
-	// }
+	}
 	return 0;
 }
