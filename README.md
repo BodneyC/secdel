@@ -4,7 +4,7 @@ This is a very small secure delete option for Windows. The reason for its creati
 
 ## Compilation
 
-Clone the repository [](https://github.com/BodneyC/secdel.git) and compile the program with "comp.bat"; use in situ or add to PATH.
+Clone the [repository](https://github.com/BodneyC/secdel.git) and compile the program with "comp.bat"; use in situ or add to PATH.
 
 ```batch
 git clone https://github.com/BodneyC/secdel.git
@@ -14,9 +14,9 @@ comp.bat
 
 ## Usage
 
-The program takes file-paths at the command line and fills them with a random value, if "-r" is provided, the file is renamed also; both of these processes are done "-l" number of times (or once).
+The program takes file-paths at the command line and fills them with a random value, if **[-r]** is provided, the file is renamed also; both of these processes are done **[-l]** number of times (or once).
 
-As the program creates a single byte array of the size of each file as default, the "-s" option can be used on larger files. The stream option ("-s") means that the program will at most use 1MiB for each file in turn for the deletion.
+As the program creates a single byte array of the size of each file as default, the **[-s]** option can be used on larger files. The stream option **[-s]** means that the program will at most use 1MiB for each file in turn for the deletion.
 
 **Command format (TCLAP output):**
 
