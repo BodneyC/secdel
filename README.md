@@ -22,7 +22,7 @@ As the program creates a single byte array of the size of each file as default, 
 
 	USAGE:
 
-	   main.exe  [-l <Integer>] [-r] [-s] [--] [--version] [-h] <String> ...
+	   secdel.exe  [-l <Integer>] [-r] [-s] [--] [--version] [-h] <String> ...
 
 
 	Where:

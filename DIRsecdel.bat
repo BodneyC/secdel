@@ -9,5 +9,5 @@ IF NOT "%~1" == "" (
 
 for  %%x in (%arg1%\*.*) do (
   set "firstFile=%%x"
-	main.exe !firstfile!
+	secdel.exe !firstfile!
 )
