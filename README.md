@@ -4,12 +4,12 @@ This is a very small secure delete option for Windows. The reason for its creati
 
 ## Compilation
 
-Clone the [repository](https://github.com/BodneyC/secdel.git) and compile the program with "comp.bat"; use in situ or add to PATH.
+Clone the [repository](https://gitlab.com/BodneyC/secdel.git) and compile the program with `make` or `comp.bat`; use in situ or add to PATH.
 
 ```batch
-git clone https://github.com/BodneyC/secdel.git
-cd secdel/
-comp.bat
+    git clone https://github.com/BodneyC/secdel.git
+    cd secdel/
+    make
 ```
 
 ## Usage

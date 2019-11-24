@@ -6,7 +6,7 @@
 #include <ctime> // std::time
 #include <cstring> // std::time
 #include <tclap/CmdLine.h>
-#include "secdel.h"
+#include "secdel.H"
 
 struct inputInfo {
     std::string pathOnly, filenameOnly, newFilename;
