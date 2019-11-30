@@ -1,15 +1,16 @@
 CC=g++
 CFLAGS=-Iinclude -std=c++11
 ODIR=obj
-OBJ=$(ODIR)/fileinfo.o
+OBJ=$(ODIR)/InputFile.o
+BIN=bin/secdel.exe
 
-$(OBJ): fileinfo.C
-	$(CC) -c -o $@ $< $(CFLAGS)
-
-secdel.exe: $(OBJ)
+$(BIN): $(OBJ)
 	$(CC) -o $@ $^ secdel.C $(CFLAGS)
+
+$(OBJ): InputFile.C
+	$(CC) -c -o $@ $< $(CFLAGS)
 
 .PHONY: clean
 
 clean:
-	del $(ODIR)/*.o *~ core 
+	rm $(ODIR)/*.o $(BIN)

@@ -10,20 +10,20 @@ typedef unsigned char BYTE;
 /*----------------------------------------------------
 Class Definition
 ----------------------------------------------------*/
-class inputFile
+class InputFile
 {
     LPCTSTR filename;
     DWORD HI32, LO32, byteswritten;
 public:
     HANDLE hInput;
-    inputFile(LPCTSTR);
-    void openFile();
-    DWORD resetFilePointer();
-    __int64 getInputInfo();
-    bool writeToFile(BYTE*, __int64);
-    bool renameFile(LPCTSTR, LPCTSTR);
-    void closeHandle();
-    bool deleteFile(LPCTSTR);
+    InputFile(LPCTSTR);
+    void open();
+    DWORD resetHandle();
+    __int64 filesize();
+    bool write(BYTE*, __int64);
+    bool rename(LPCTSTR, LPCTSTR);
+    void close();
+    bool remove(LPCTSTR);
 };
 
 #endif

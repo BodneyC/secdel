@@ -1,13 +1,13 @@
 #include "secdel.H"
 
 // CONSTRUCTOR: Sets filename string
-inputFile::inputFile(LPCTSTR stringIn)
+InputFile::InputFile(LPCTSTR stringIn)
 {
     filename = stringIn;
 }
 
 // Opens the file from string
-void inputFile::openFile()
+void InputFile::open()
 {
     hInput = CreateFile(
         filename, 
@@ -21,7 +21,7 @@ void inputFile::openFile()
 }
 
 // Resets the file pointer to 0
-DWORD inputFile::resetFilePointer()
+DWORD InputFile::resetHandle()
 {
     return SetFilePointer(
         hInput, 
@@ -32,14 +32,14 @@ DWORD inputFile::resetFilePointer()
 }
 
 // Returns size of input file
-__int64 inputFile::getInputInfo()
+__int64 InputFile::filesize()
 {
     LO32 = GetFileSize (hInput, &HI32);
     return (__int64)HI32 + (__int64)LO32;
 }
 
 // Writes to the file
-bool inputFile::writeToFile(BYTE *byteArr, __int64 bytecount)
+bool InputFile::write(BYTE *byteArr, __int64 bytecount)
 {
     return WriteFile(
         hInput, 
@@ -51,7 +51,7 @@ bool inputFile::writeToFile(BYTE *byteArr, __int64 bytecount)
 }
 
 // Renames the file
-bool inputFile::renameFile(LPCTSTR currentname, LPCTSTR newname)
+bool InputFile::rename(LPCTSTR currentname, LPCTSTR newname)
 {
     return MoveFileEx(
         currentname, 
@@ -60,14 +60,14 @@ bool inputFile::renameFile(LPCTSTR currentname, LPCTSTR newname)
     );
 }
 
-// CLoses the handle to the inputFile
-void inputFile::closeHandle()
+// CLoses the handle to the InputFile
+void InputFile::close()
 {
     CloseHandle(hInput);
 }
 
 // Deletes the file
-bool inputFile::deleteFile (LPCTSTR currentname)
+bool InputFile::remove(LPCTSTR currentname)
 {
     return DeleteFile(currentname);
 }

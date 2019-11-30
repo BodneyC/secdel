@@ -1,15 +1,17 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
-#include <algorithm> // std::fill
-#include <cstdlib> // std::srand
-#include <ctime> // std::time
-#include <cstring> // std::time
+#include <algorithm>
+#include <cstdlib>
+#include <ctime>
+#include <cstring>
 #include <tclap/CmdLine.h>
 #include "secdel.H"
 
+typedef std::vector<std::string>::const_iterator FnameIter;
+
 struct inputInfo {
-    std::string pathOnly, filenameOnly, newFilename;
+    std::string basepath, basename;
     std::vector<std::string> inputStrings;
     int levelVal;
     bool streamVal, renameVal;
@@ -18,144 +20,137 @@ struct inputInfo {
 /*------------------------------------------------------------
  * RNG dependant
  *------------------------------------------------------------*/
-BYTE getRandomNumber()
+
+BYTE randomNumber() { return std::rand() & 0xFF; }
+char randomChar() { return 'a' + std::rand() % 26; }
+
+/*------------------------------------------------------------
+ * Wiping function
+ *------------------------------------------------------------*/
+void wipeFunction (InputFile &file)
 {
-    return std::rand() & 0xFF;
+    int cnt = file.filesize() / MEGABYTE;
+    int mod = file.filesize() % MEGABYTE;
+
+    std::ios fmt(NULL);
+    fmt.copyfmt(std::cout);
+
+    BYTE *chunk;
+    if (CMDArgs.streamVal)
+        chunk = new BYTE[MEGABYTE];
+    else
+        chunk = new BYTE[file.filesize()];
+
+    for (int levCount = 0; levCount < CMDArgs.levelVal; levCount++) {
+        BYTE rand = randomNumber();
+
+        if (CMDArgs.streamVal) {
+            memset (chunk, rand, MEGABYTE);
+            for (int i = 0; i < cnt; i++)
+                file.write(chunk, MEGABYTE);
+            file.write(chunk, mod);
+        } else {
+            memset (chunk, rand, file.filesize());
+            file.write(chunk, file.filesize());
+        }
+
+        file.resetHandle();
+        std::cout << "Pass " << std::setw(2) << levCount
+            << ": written value: " << std::hex << std::setfill('0')
+            << std::internal << std::showbase << std::setw(4)
+            << (int)rand << '\n';
+        std::cout.copyfmt(fmt);
+    }
+
+    delete[] chunk;
 }
 
 /*------------------------------------------------------------
-Wiping function
-------------------------------------------------------------*/
-void wipeFunction (inputFile &cFile)
+ * Renaming function
+ *------------------------------------------------------------*/
+std::string rename (InputFile &file, std::string filename)
 {
-    BYTE *byteArr, randVal;
-    std::ios fmtCout(NULL); // Default formatting saved
-    fmtCout.copyfmt(std::cout);
-
-    if (CMDArgs.streamVal) {
-        int loopcount = cFile.getInputInfo() / MEGABYTE;
-        int loopremainder = cFile.getInputInfo() % MEGABYTE;
-        byteArr = new BYTE[MEGABYTE];
-
-        for (int levCount = 0; levCount < CMDArgs.levelVal; levCount++) {
-            randVal = getRandomNumber();
-
-            for (int i = 0; i < loopcount; i++) {
-                memset (byteArr, randVal, MEGABYTE);
-                cFile.writeToFile (byteArr, MEGABYTE);
-            }
-
-            randVal = getRandomNumber();
-            memset (byteArr, randVal, MEGABYTE);
-            cFile.writeToFile (byteArr, loopremainder);
-
-            std::cout.copyfmt(fmtCout);
-            std::cout << "Pass " << std::setw(2) << levCount << ": written value: " << std::hex << std::setfill('0') << std::internal << std::showbase << std::setw(4) << (int)randVal << '\n';
-        }
-    } else {
-        byteArr = new BYTE[cFile.getInputInfo()];
-
-        for (int levCount = 0; levCount < CMDArgs.levelVal; levCount++) {
-            randVal = getRandomNumber();
-            memset (byteArr, randVal, cFile.getInputInfo());
-            cFile.writeToFile (byteArr, cFile.getInputInfo());
-            cFile.resetFilePointer();
-            std::cout.copyfmt(fmtCout);
-            std::cout << "Pass " << std::setw(2) << levCount << ": written value: " << std::hex << std::setfill('0') << std::internal << std::showbase << std::setw(4) << (int)randVal << '\n';
-        }
+    std::string tempFilename = filename;
+    for (int i = 0; i < CMDArgs.levelVal; i++) {
+        std::string newFilename(tempFilename.size(), randomChar());
+        if (file.rename(tempFilename.c_str(), newFilename.c_str()))
+            std::cout << "Pass " << std::setw(2) << i << ": renamed as: "
+                << newFilename << '\n';
+        tempFilename = newFilename;
     }
-
-    std::cout.copyfmt(fmtCout);
-    delete[] byteArr;
-}
-
-/*------------------------------------------------------------
-Renaming function
-------------------------------------------------------------*/
-std::string renameFunction (inputFile &cFile, std::string origName)
-{
-    CMDArgs.newFilename.clear();
-    CMDArgs.newFilename = CMDArgs.pathOnly;
-    std::string tempFilename = origName;
-    char ch = 'A';
-    bool renameSucc;
-
-    for (int o = 0; o < CMDArgs.levelVal && o < 25; o++) {
-        for (int i = 0; i < 10; i++) {
-            CMDArgs.newFilename.insert(CMDArgs.newFilename.end(), 1, ch);
-        }
-
-        renameSucc = cFile.renameFile(tempFilename.c_str(), CMDArgs.newFilename.c_str());
-        tempFilename = CMDArgs.newFilename;
-        CMDArgs.newFilename.erase(CMDArgs.newFilename.end() - 10, CMDArgs.newFilename.end());
-
-        if (renameSucc) {
-            std::cout << "Pass " << std::setw(2) << o << ": renamed as: ";
-
-            for (int i = 0; i < 10; i++) {
-                std::cout << ch;
-            }
-
-            std::cout << '\n';
-        }
-
-        ch++;
-    }
-
     return tempFilename;
 }
 
 /*------------------------------------------------------------
-Reverse iterate the provided file path
-------------------------------------------------------------*/
-void retPathname (std::string origName)
+ * Reverse iterate the provided file path
+ *------------------------------------------------------------*/
+void cmdArgsFileProcess (std::string origName)
 {
     std::string::reverse_iterator revIt = origName.rbegin();
-    CMDArgs.pathOnly.clear();
+    CMDArgs.basepath.clear();
+    CMDArgs.basename.clear();
 
-    while (*revIt != '\\')
+    while (*revIt != '\\') {
+        CMDArgs.basename.push_back(*revIt);
         revIt++;
+    }
 
-    if (revIt > origName.rend())
-        CMDArgs.pathOnly = ".\\";
-    else {
-        for (; revIt < origName.rend(); revIt++) 
-            CMDArgs.pathOnly.push_back(*revIt);
-
-        std::reverse (CMDArgs.pathOnly.begin(), CMDArgs.pathOnly.end());
+    if (revIt > origName.rend()) {
+        CMDArgs.basepath = ".\\";
+        CMDArgs.basename = origName;
+    } else {
+        for (; revIt < origName.rend(); revIt++)
+            CMDArgs.basepath.push_back(*revIt);
+        std::reverse (CMDArgs.basepath.begin(), CMDArgs.basepath.end());
+        std::reverse (CMDArgs.basename.begin(), CMDArgs.basename.end());
     }
 }
 
 /*------------------------------------------------------------
-Reverse iterate the provided file path
-------------------------------------------------------------*/
-void retFilename (std::string origName)
-{
-    std::string::reverse_iterator revIt = origName.rbegin();
-    CMDArgs.filenameOnly.clear();
+ * Process a file by name
+ *------------------------------------------------------------*/
+int processFile(std::string filename) {
+    cmdArgsFileProcess(filename);
 
-    while (*revIt != '\\') {
-        CMDArgs.filenameOnly.push_back(*revIt);
-        revIt++;
+    std::cout << "\nInput file: " << '\t' << CMDArgs.basename << '\n';
+
+    InputFile file((LPCTSTR)filename.c_str());
+    file.open();
+
+    if (file.hInput == INVALID_HANDLE_VALUE) {
+        std::cout << "Failed to open handle to file. Error code: "
+            << GetLastError() << '\n';
+        return 1;
     }
 
-    if (revIt > origName.rend()) 
-        CMDArgs.filenameOnly = origName;
-    else 
-        std::reverse (CMDArgs.filenameOnly.begin(), CMDArgs.filenameOnly.end());
+    std::cout << "Filesize: " << '\t' << file.filesize()
+        << " bytes\n\nWiping File Contents:\n";
+    wipeFunction(file);
+    file.close();
+
+    if (CMDArgs.renameVal) {
+        std::cout << "\nWiping Filename:" << filename << '\n';
+        filename = rename(file, filename);
+    }
+
+    return file.remove(filename.c_str());
 }
 
 /*------------------------------------------------------------
 Argument Returning (CMDArgs)
 ------------------------------------------------------------*/
-void returnArgs (int argn, char const *args[])
+void tclapArgs (int argn, char const *args[])
 {
     try {
-        TCLAP::CmdLine cmd("Secure deletion tool for Windows", ' ', "1.04");
-        TCLAP::UnlabeledMultiArg<std::string> inputArg("input", "Input File-path", true, "String", false);
-        TCLAP::ValueArg<int> levelArg("l", "levels", "Number of times to wipe", false, 1, "Integer");
-        TCLAP::SwitchArg streamSwitch("s", "stream", "Wipe in small chunks", cmd, 0);
-        TCLAP::SwitchArg renameSwitch("r", "rename", "Rename [-l] levels before deletion", cmd, 0);
+        TCLAP::CmdLine cmd("Secure deletion tool for Windows", ' ', "1.05");
+        TCLAP::UnlabeledMultiArg<std::string> inputArg("input",
+                "Input File-path", true, "String", false);
+        TCLAP::ValueArg<int> levelArg("l", "levels",
+                "Number of times to wipe", false, 1, "Integer");
+        TCLAP::SwitchArg streamSwitch("s", "stream",
+                "Wipe in small chunks", cmd, 0);
+        TCLAP::SwitchArg renameSwitch("r", "rename",
+                "Rename [-l] levels before deletion", cmd, 0);
         cmd.add(inputArg);
         cmd.add(levelArg);
         cmd.parse(argn, args);
@@ -164,50 +159,26 @@ void returnArgs (int argn, char const *args[])
         CMDArgs.renameVal = renameSwitch.getValue();
         CMDArgs.streamVal = streamSwitch.getValue();
     } catch (TCLAP::ArgException &e) {
-        std::cerr << "Error: " << e.error() << " for arg " << e.argId() << std::endl;
+        std::cerr << "Error: " << e.error() << " for arg "
+            << e.argId() << std::endl;
     }
 }
 
 /*----------------------------------------------------
-MAIN()
-----------------------------------------------------*/
+ * MAIN()
+ *----------------------------------------------------*/
 int main(int argc, char const *argv[])
 {
     std::srand(std::time(0));
-    returnArgs(argc, argv);
+    tclapArgs(argc, argv);
 
-    for (std::vector<std::string>::const_iterator inputIt = CMDArgs.inputStrings.begin(); inputIt != CMDArgs.inputStrings.end(); inputIt++) {
-        retPathname(*inputIt);
-        retFilename(*inputIt);
-        std::string finalFilename = *inputIt;
-
-        LPCTSTR tempName = finalFilename.c_str();
-        inputFile cFile (tempName);
-        cFile.openFile();
-        std::cout << "\nInput file: " << '\t' << CMDArgs.filenameOnly << '\n';
-
-        if (cFile.hInput == INVALID_HANDLE_VALUE) {
-            std::cout << "Failed to open handle to file. Error code: " << GetLastError() << '\n';
-            return 1;
-        }
-
-        std::cout << "Filesize: " << '\t' << cFile.getInputInfo() << " bytes\n\nWiping File Contents:\n";
-        wipeFunction(cFile);
-        cFile.closeHandle();
-
-        if (CMDArgs.renameVal) {
-            std::cout << "\nWiping Filename:" << '\n';
-            finalFilename = renameFunction(cFile, *inputIt);
-        }
-
-        if (!cFile.deleteFile(finalFilename.c_str())) {
-            std::cout << "\nCould not delete file. Error code: " << GetLastError() << '\n';
-            return 1;
-        } else {
+    std::vector<std::string> fnames = CMDArgs.inputStrings;
+    for (FnameIter it = fnames.begin(); it != fnames.end(); it++)
+        if (processFile(*it))
             std::cout << "\nFile deleted (securely)" << '\n';
-            std::cout << '\n' << "File removed Successfully" << '\n';
-        }
-    }
+        else
+            std::cout << "\nCould not process file. Error code: "
+                << GetLastError() << '\n';
 
     std::cout << '\n' << "Program Completed Successfully" << '\n';
     return 0;

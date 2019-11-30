@@ -1,6 +1,5 @@
-*.o
-*.exe
-testing.*
 .virkspace
 .virkignore
 obj
+bin
+test
